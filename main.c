@@ -8,15 +8,6 @@
 
 #define BUF_MAX 256
 
-int true_sizeof(char *str) {
-    int pos = 0;
-    char curr;
-    while((curr = str[pos]) && curr != '\0') {
-        pos++;
-    }
-    return pos;
-}
-
 int main (int argc, char** argv) {
     if (argc < 3) {
         printf("Not enough arguments. Try <PORT> <MSG>.\n");
@@ -39,7 +30,7 @@ int main (int argc, char** argv) {
     sprintf(res, "HTTP/1.1 200 OK\r\n"
                  "Content-Type: text/html; charset=utf-8\r\n"
                  "Content-Length: %d\r\n\r\n%s\r\n", 
-                 true_sizeof(msg), msg);
+                 (int)strlen(msg), msg);
 
     int server_fd, client_fd, client_length, status;
     struct sockaddr_in serv_addr, client_addr;
@@ -88,7 +79,7 @@ int main (int argc, char** argv) {
         }
 
         // sending
-        status = write(client_fd, res, true_sizeof(res)); 
+        status = write(client_fd, res, strlen(res)); 
         if(status < 0) {
             printf("Error writing to socket.\n");
             return EXIT_FAILURE;
