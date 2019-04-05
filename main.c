@@ -1,93 +1,94 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <netdb.h>
+#include <unistd.h>
 #include <netinet/in.h>
+#include <netdb.h>
 #include <string.h>
-#include <unistd.h> // read/write
 #include <signal.h>
 
-#define BUF_MAX 256
+#define MAX_CONN 256
+#define MAX_BUF 256
 
-int main (int argc, char** argv) {
-    if (argc < 3) {
-        printf("Not enough arguments. Try <PORT> <MSG>.\n");
-        return EXIT_FAILURE;
+void check_err(int i) 
+{
+    if (i < 0)
+    {
+        perror("Error: \n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+int main(int argc, char **argv)
+{
+    int port,
+        s_fd,
+        c_fd,
+        client_len,
+        i;
+
+    char msg[MAX_BUF],
+         res[MAX_BUF];
+
+    struct sockaddr_in serv_addr,
+                      client_addr;
+
+    if(argc < 3)
+    {
+        fprintf(stderr, "More params pls. <PORT> <MSG>\n");
+        exit(EXIT_FAILURE);
     }
 
-    int port = atoi(argv[1]);
+    port = (int)atol(argv[1]);
 
-    char msg[BUF_MAX];
-    char body[BUF_MAX];
-    char res[BUF_MAX];
-
-    // construct echo message
-    strcpy(msg, argv[2]);
-    for(int i = 3; i < argc; i++) {
-        strcat(msg, " ");
+    for(i = 2; argv[i]; i++)
+    {
         strcat(msg, argv[i]);
+
+        if(i != argc -1) 
+        {
+            strcat(msg, " ");
+        }
     }
+
+    void handle() 
+    {
+        close(c_fd);
+        close(s_fd);
+        printf("\nServer is closing...\n");
+        exit(EXIT_SUCCESS);
+    }
+
+    signal(SIGINT, handle);
+    
+    memset((char*)&serv_addr, 0, sizeof(serv_addr));
 
     sprintf(res, "HTTP/1.1 200 OK\r\n"
                  "Content-Type: text/html; charset=utf-8\r\n"
-                 "Content-Length: %d\r\n\r\n%s\r\n", 
+                 "Content-Length: %d\r\n\r\n%s\r\n",
                  (int)strlen(msg), msg);
 
-    int server_fd, client_fd, client_length, status;
-    struct sockaddr_in serv_addr, client_addr;
+    s_fd = socket(AF_INET, SOCK_STREAM, 0);
+    check_err(s_fd);
 
-    void handle_exit(){
-        close(client_fd);
-        close(server_fd);
-        printf("\n");
-        exit(EXIT_SUCCESS);
-    }
-    signal(SIGINT, handle_exit);
-
-    server_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if(server_fd < 0) {
-        printf("Error opening socket.\n");
-        return EXIT_FAILURE;
-    }
-
-    bzero((char*)&serv_addr,sizeof(serv_addr)); // zero out
-
-    serv_addr.sin_family= AF_INET;
-    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(port);
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
 
-    if(bind(server_fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
-        printf("Error could not bind.\n");
-        return EXIT_FAILURE;
+    check_err(bind(s_fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)));
+    check_err(listen(s_fd, MAX_CONN));
+
+    client_len = sizeof(client_addr);
+
+    while(1) 
+    {
+        c_fd = accept(s_fd, (struct sockaddr*)&client_addr, (socklen_t*)&client_len);
+        check_err(c_fd);
+
+        check_err(write(c_fd, res, strlen(res)));
+        close(c_fd);
     }
 
-    listen(server_fd, 5);
-    client_length = sizeof(client_addr);
-
-    while(1) {
-        client_fd = accept(server_fd, (struct sockaddr*)&client_addr, &client_length);
-        if(client_fd < 0) {
-            printf("Error could not accept.\n");
-            return EXIT_FAILURE;
-        }
-
-        // received
-        bzero(body, BUF_MAX); // zero out
-        status = read(client_fd, body, BUF_MAX);
-        if(status < 0) {
-            printf("Error reading from socket.\n");
-            return EXIT_FAILURE;
-        }
-
-        // sending
-        status = write(client_fd, res, strlen(res)); 
-        if(status < 0) {
-            printf("Error writing to socket.\n");
-            return EXIT_FAILURE;
-        }
-
-
-        close(client_fd);
-    }
+    close(s_fd);
 
     return EXIT_SUCCESS;
 }
