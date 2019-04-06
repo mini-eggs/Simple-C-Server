@@ -1,9 +1,12 @@
 Simple C client/server.
 
-`$ gcc server.c err.c && ./a.out 8080 this is a triumph`
-`$ gcc client.c err.c && ./a.out 8080`
+`$ make`
 
+This will build both `server` and `client`.
 
-After running both commands you may enter into stdin of the client and your
-message will be echo'd back to you by the server.
+Usage:
+`$ ./server 8080`
+`$ ./client 8080`
 
+Client will begin taking input from stdin then will make requests to the
+server. The server echos this message back with and html response.

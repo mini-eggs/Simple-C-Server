@@ -41,11 +41,9 @@ void html_response(char *res, char *msg)
 int main(int argc, char **argv)
 {
     int port,
-        client_len,
-        i;
+        client_len;
 
-    char msg[MAX_BUF],
-         body[MAX_BUF],
+    char body[MAX_BUF],
          res[MAX_BUF];
 
     struct sockaddr_in serv_addr,
@@ -53,24 +51,13 @@ int main(int argc, char **argv)
 
     signal(SIGINT, handle_exit);
 
-    if(argc < 3)
+    if(argc < 2)
     {
-        fprintf(stderr, "More params pls. <PORT> <MSG>\n");
+        fprintf(stderr, "More params pls. <PORT>\n");
         exit(EXIT_FAILURE);
     }
 
     port = (int)atol(argv[1]);
-
-    memset(msg, 0, sizeof(msg));
-    for(i = 2; argv[i]; i++)
-    {
-        strcat(msg, argv[i]);
-
-        if(i != argc -1) 
-        {
-            strcat(msg, " ");
-        }
-    }
 
     memset((char*)&serv_addr, 0, sizeof(serv_addr));
 
